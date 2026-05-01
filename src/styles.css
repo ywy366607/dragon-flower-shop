@@ -301,28 +301,30 @@ body {
 
 /* ===== LAYOUT: fixed viewport, each panel scrolls independently ===== */
 
-html, body {
-  height: 100% !important;
-  max-height: 100vh !important;
-  overflow: hidden !important;
+/* Lock viewport */
+html {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* Main 3-column wrapper: fill remaining height */
+/* Main 3-column wrapper */
 #main-content {
-  flex: 1 1 0% !important;
-  min-height: 0 !important;
-  height: 0 !important;
-  overflow: hidden !important;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Chat window */
 #chat-window {
-  min-height: 0 !important;
-  overflow: hidden !important;
+  min-height: 0;
+  overflow: hidden;
 }
 
 #chat-messages {
-  overflow-y: scroll !important;
+  overflow-y: scroll;
   overscroll-behavior: contain;
 }
 
@@ -343,36 +345,33 @@ html, body {
 
 /* Action window */
 #action-window {
-  min-height: 0 !important;
-  overflow-y: auto !important;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Side panel */
 #side-panel {
-  min-height: 0 !important;
-  overflow-y: auto !important;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ===== Responsive: mobile stacks vertically ===== */
 @media (max-width: 1024px) {
   html, body {
-    height: auto !important;
-    max-height: none !important;
-    overflow: auto !important;
+    height: auto;
+    overflow: auto;
   }
   #main-content {
-    height: auto !important;
-    min-height: auto !important;
-    overflow: visible !important;
-    flex-shrink: 0 !important;
+    min-height: auto;
+    overflow: visible;
   }
   #chat-window {
-    min-height: 45vh !important;
-    max-height: 50vh !important;
-    overflow: hidden !important;
+    min-height: 45vh;
+    max-height: 50vh;
+    overflow: hidden;
   }
   #chat-messages {
-    max-height: 100% !important;
+    max-height: 100%;
   }
   #action-window {
     border-right: none;
@@ -380,7 +379,7 @@ html, body {
   }
   #side-panel {
     border-top: 1px solid #1a2332;
-    max-height: 35vh !important;
+    max-height: 35vh;
   }
 }
 
