@@ -302,7 +302,8 @@ body {
 /* Responsive */
 @media (max-width: 1024px) {
   #chat-window {
-    min-height: 40vh;
+    min-height: 35vh;
+    max-height: 50vh;
   }
   #action-window {
     border-right: none;
@@ -310,11 +311,14 @@ body {
   }
   #side-panel {
     border-top: 1px solid #1a2332;
-    max-height: 40vh;
+    max-height: 35vh;
   }
 }
 
 @media (min-width: 1025px) {
+  #chat-window {
+    min-height: 0;
+  }
   #side-panel {
     min-width: 320px;
   }

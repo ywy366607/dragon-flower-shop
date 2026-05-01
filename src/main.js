@@ -47,18 +47,32 @@ let choiceHistory = [];
 // --- Initialize ---
 
 async function init() {
-  initUI();
-  resetState();
+  try {
+    initUI();
+    resetState();
 
-  const startBtn = document.getElementById('start-btn');
-  const overlay = document.getElementById('intro-overlay');
+    const startBtn = document.getElementById('start-btn');
+    const overlay = document.getElementById('intro-overlay');
 
-  startBtn.addEventListener('click', async () => {
-    overlay.style.opacity = '0';
-    overlay.style.transition = 'opacity 0.5s';
-    setTimeout(() => overlay.classList.add('hidden'), 500);
-    await startGame();
-  });
+    if (!startBtn || !overlay) {
+      console.error('Missing DOM elements: start-btn or intro-overlay');
+      return;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.5s';
+        setTimeout(() => overlay.classList.add('hidden'), 500);
+        await startGame();
+      } catch (e) {
+        console.error('startGame error:', e);
+        addChatMessage('system', `启动错误: ${e.message}`, { delay: 0, instant: true });
+      }
+    });
+  } catch (e) {
+    console.error('init error:', e);
+  }
 }
 
 // --- Main Game Flow ---
@@ -91,6 +105,8 @@ async function playChapter(index) {
     await endGame();
     return;
   }
+
+  try {
 
   currentChapter = index;
   const chapter = CHAPTERS[index];
@@ -153,6 +169,11 @@ async function playChapter(index) {
 
   // Show narrative choices + player input
   showChoicesWithInput(chapter);
+
+  } catch (e) {
+    console.error(`playChapter(${index}) error:`, e);
+    addChatMessage('system', `章节错误: ${e.message}`, { delay: 0, instant: true });
+  }
 }
 
 // --- Update Agent Contexts ---
@@ -239,7 +260,7 @@ async function getLLMRecommendation(state, agentType, marketContext) {
   try {
     const agent = agentType === 'platform' ? platformAgent : localAgent;
     const prompt = `你是进货顾问。根据以下市场数据，推荐一种花进货。只回复一句话，格式：推荐XXX花，原因：XXX\n\n${marketContext}`;
-    const response = await agent.chat(prompt, { maxTokens: 100, timeout: 8000 });
+    const response = await agent.chat(prompt, '进货建议');
     if (response) {
       // Parse: try to find which flower was recommended
       const catMap = { '合成': 'synthetic', '自然': 'natural', '索引': 'memory', '情绪': 'emotion', '人格': 'personality', '含数': 'data' };

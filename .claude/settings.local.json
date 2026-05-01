@@ -31,7 +31,8 @@
       "Bash(curl *)",
       "Bash(node cli.js --auto --seed 7)",
       "Bash(node cli.js --auto --seed 3)",
-      "Bash(node cli.js --llm --auto --seed 3)"
+      "Bash(node cli.js --llm --auto --seed 3)",
+      "WebFetch(domain:ywy366607.github.io)"
     ]
   }
 }
