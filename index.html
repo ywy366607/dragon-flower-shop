@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>喂龙花店 / 暗香协议</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/src/styles.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            terminal: {
+              bg: '#0a0e14',
+              surface: '#111822',
+              border: '#1a2332',
+              text: '#c5cdd9',
+              dim: '#5a6577',
+            },
+            speaker: {
+              customer: '#e8dcc8',
+              assistant: '#f0a050',
+              market: '#5b9bd5',
+              regulator: '#8c8c8c',
+              company: '#a78bfa',
+              tide: '#2dd4bf',
+              player: '#4ade80',
+              system: '#5a6577',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-terminal-bg text-terminal-text min-h-screen flex flex-col">
+  <!-- Title Bar -->
+  <header id="title-bar" class="border-b border-terminal-border px-4 py-2 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-speaker-assistant font-bold text-lg">喂龙花店</span>
+      <span class="text-terminal-dim text-sm">/ 暗香协议</span>
+    </div>
+    <div id="chapter-indicator" class="text-terminal-dim text-sm">等待开始</div>
+  </header>
+
+  <!-- State Bar -->
+  <div id="state-bar" class="border-b border-terminal-border px-4 py-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+    <span class="state-item" data-key="money">资金: <em>50</em></span>
+    <span class="state-item" data-key="cash">现金: <em>100</em></span>
+    <span class="state-item" data-key="trust">信用: <em>50</em></span>
+    <span class="state-item" data-key="retention">留存: <em>50</em></span>
+    <span class="state-item" data-key="dataCapital">数据资本: <em>50</em></span>
+    <span class="state-item" data-key="platformDependence">平台依赖: <em>50</em></span>
+    <span class="state-item" data-key="localAI">本地AI: <em>50</em></span>
+    <span class="state-item" data-key="localAIStyle">AI风格: <em>50</em></span>
+    <span class="state-item" data-key="regulationPressure">监管压力: <em>50</em></span>
+    <span class="state-item" data-key="assimilation">同化率: <em>50</em></span>
+    <span class="state-item" data-key="ecology">生态: <em>50</em></span>
+    <span class="state-item" data-key="blackMarket">黑市: <em>50</em></span>
+    <span class="state-item" data-key="publicSafety">公共安全: <em>50</em></span>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- Chat Window (left/center) -->
+    <div id="chat-window" class="flex-1 flex flex-col overflow-hidden border-r border-terminal-border">
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
+        <!-- Messages will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Action Window (center on mobile, middle column on desktop) -->
+    <div id="action-window" class="w-full lg:w-80 border-r border-terminal-border flex flex-col overflow-hidden">
+      <div class="px-4 py-2 border-b border-terminal-border text-terminal-dim text-xs uppercase tracking-wider">
+        操作台
+      </div>
+      <div id="action-content" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <!-- Action buttons/cards will be inserted here -->
+        <div class="text-terminal-dim text-sm text-center py-8">
+          等待开始...
+        </div>
+      </div>
+    </div>
+
+    <!-- Side Panel (right) -->
+    <div id="side-panel" class="w-full lg:w-80 flex flex-col overflow-hidden">
+      <div class="flex-1 overflow-y-auto">
+        <!-- Market Panel -->
+        <div class="px-4 py-2 border-b border-terminal-border text-terminal-dim text-xs uppercase tracking-wider">
+          行情面板
+        </div>
+        <div id="market-panel" class="p-4">
+          <div class="text-terminal-dim text-xs">等待交易数据...</div>
+        </div>
+
+        <!-- Tide Panel -->
+        <div class="px-4 py-2 border-b border-terminal-border text-terminal-dim text-xs uppercase tracking-wider">
+          潮汐记录
+        </div>
+        <div id="tide-content" class="p-4 text-sm space-y-2">
+          <div class="text-terminal-dim">暂无记录</div>
+        </div>
+
+        <!-- AI Assistant Panel -->
+        <div class="px-4 py-2 border-b border-terminal-border text-terminal-dim text-xs uppercase tracking-wider">
+          助手状态
+        </div>
+        <div id="assistant-panel" class="p-4 text-sm">
+          <div class="text-speaker-assistant">阿原 待机中...</div>
+          <div id="assistant-principles" class="mt-2 text-terminal-dim text-xs">
+            已教导原则：无
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Intro Overlay -->
+  <div id="intro-overlay" class="fixed inset-0 bg-terminal-bg/95 z-50 flex items-center justify-center">
+    <div class="text-center max-w-lg px-8">
+      <h1 class="text-speaker-assistant text-3xl font-bold mb-2">喂龙花店</h1>
+      <p class="text-terminal-dim text-sm mb-1">暗香协议 / AI 叙事市场模拟</p>
+      <p class="text-terminal-text text-sm mb-8 leading-relaxed">
+        在一个 AI 极度发达的时代，你经营一家花店。<br>
+        你卖的不是花，而是情绪、记忆、数据与智能的未来。<br>
+        每一次成交，背后都有一群相似的人在改变文明潮汐。
+      </p>
+      <button id="start-btn"
+        class="px-8 py-3 border border-speaker-assistant text-speaker-assistant hover:bg-speaker-assistant/10 transition-colors text-sm tracking-wider">
+        开始经营
+      </button>
+      <p class="text-terminal-dim text-xs mt-6">
+        本作品为虚构叙事交互体验。所有交易、数据、AI、市场反馈均为模拟内容。
+      </p>
+    </div>
+  </div>
+
+  <!-- Ending Overlay -->
+  <div id="ending-overlay" class="fixed inset-0 bg-terminal-bg/95 z-50 hidden flex items-center justify-center overflow-y-auto">
+    <div id="ending-content" class="max-w-2xl w-full px-8 py-12">
+      <!-- Ending content will be inserted here -->
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

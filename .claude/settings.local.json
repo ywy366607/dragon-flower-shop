@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(curl -s http://localhost:5173/src/main.js)",
+      "Bash(curl -s http://localhost:5173/src/market.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(node cli.js --auto --seed 42 --no-market)",
+      "Bash(node cli.js --script test-run.json --no-market)",
+      "Bash(node cli.js --script test-run2.json --no-market)",
+      "Bash(node cli.js --script test-run3.json --no-market)",
+      "Bash(node cli.js --auto --seed 99)",
+      "Bash(node cli.js --auto --seed 42)",
+      "Bash(node cli.js --llm --auto --seed 42)",
+      "Bash(node -e \"import\\('./src/main.js'\\).catch\\(e => console.error\\(e.message\\)\\)\")",
+      "Bash(npm run *)",
+      "Bash(gh auth *)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

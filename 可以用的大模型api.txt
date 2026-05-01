@@ -1,0 +1,22 @@
+twofishai
+sk-tApx30qKQNNAyWeA0SWcodlIX5V2hs55J5r9dlphT0Cd34zz
+https://imagineers.twofishai.com/v1/chat/completions
+deepseek-v4-flash
+deepseek-v4-pro
+MiniMax-M2.7
+MiniMax-M2.5
+
+
+302ai
+文档：https://302ai.apifox.cn/api-171145944.md
+api：sk-3mlePwDM58cUvQrQOh9qDuqpZzBMqcwLE9hOs5uy5NErdow6
+url：https://api.302.ai/v1/chat/completions
+支持模型：
+deepseek-chat（官方版）
+deepseek-reasoner（官方版）
+deepseek-v3.1（官方版）
+deepseek-v3.1-huoshan（火山引擎部署版本）
+deepseek-v3.2 （官方版）
+deepseek-v3.2-thinking（官方版）
+deepseek-v4-flash（官方版）
+deepseek-v4-pro（官方版）
