@@ -284,7 +284,14 @@ async function tradingPhase(chapter) {
 
   // AI recommendation
   let recommendedCat = null;
-  if (assistantType === 'platform' || assistantType === 'mixed') {
+  if (assistantType === 'mixed') {
+    const recP = getAIRecommendation(state, 'platform');
+    const recL = getAIRecommendation(state, 'local');
+    await addChatMessage('platform_ai', `建议进货${categoryNames[recP.category]}。${recP.reason}。`, { delay: 400 });
+    await addChatMessage('assistant', `店主，我建议进${categoryNames[recL.category]}。${recL.reason}。`, { delay: 400 });
+    // Highlight local recommendation (player's own assistant takes priority)
+    recommendedCat = recL.category;
+  } else if (assistantType === 'platform') {
     const rec = getAIRecommendation(state, 'platform');
     recommendedCat = rec.category;
     await addChatMessage('platform_ai', `建议进货${categoryNames[rec.category]}。${rec.reason}。`, { delay: 500 });

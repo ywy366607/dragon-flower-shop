@@ -283,7 +283,13 @@ async function tradingPhase(chapterIndex) {
 
   // AI recommendation
   let recommendedIndex = null;
-  if (assistantType === 'platform' || assistantType === 'mixed') {
+  if (assistantType === 'mixed') {
+    const recP = getAIRecommendation(state, 'platform');
+    const recL = getAIRecommendation(state, 'local');
+    out(`\n[总模型助手] 建议进货${CATEGORY_NAMES[recP.category]}。${recP.reason}。`);
+    out(`[阿原] 店主，我建议进${CATEGORY_NAMES[recL.category]}。${recL.reason}。`);
+    recommendedIndex = categories.indexOf(recL.category) + 1;
+  } else if (assistantType === 'platform') {
     const rec = getAIRecommendation(state, 'platform');
     const idx = categories.indexOf(rec.category) + 1;
     out(`\n[总模型助手] 建议进货${CATEGORY_NAMES[rec.category]}。${rec.reason}。`);
