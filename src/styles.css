@@ -299,73 +299,88 @@ body {
   margin: 8px 0;
 }
 
-/* Layout: force all columns to be height-constrained */
-body {
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
+/* ===== LAYOUT: fixed viewport, each panel scrolls independently ===== */
+
+html, body {
+  height: 100% !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
 }
 
-/* Main 3-column wrapper */
-body > .flex-1.flex.flex-col {
-  height: 0;
-  min-height: 0;
-  flex: 1 1 0%;
+/* Main 3-column wrapper: fill remaining height */
+#main-content {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
-/* Chat window: scroll internally */
+/* Chat window */
 #chat-window {
-  height: 0;
-  min-height: 0;
+  min-height: 0 !important;
   overflow: hidden !important;
 }
 
 #chat-messages {
-  height: 100%;
-  overflow-y: auto !important;
+  overflow-y: scroll !important;
+  overscroll-behavior: contain;
+}
+
+/* Visible scrollbar on chat */
+#chat-messages::-webkit-scrollbar {
+  width: 8px;
+}
+#chat-messages::-webkit-scrollbar-track {
+  background: #0a0e14;
+}
+#chat-messages::-webkit-scrollbar-thumb {
+  background: #2a3342;
+  border-radius: 4px;
+}
+#chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #3a4557;
 }
 
 /* Action window */
 #action-window {
-  min-height: 0;
+  min-height: 0 !important;
   overflow-y: auto !important;
 }
 
 /* Side panel */
 #side-panel {
-  min-height: 0;
+  min-height: 0 !important;
   overflow-y: auto !important;
 }
 
-/* Responsive */
+/* ===== Responsive: mobile stacks vertically ===== */
 @media (max-width: 1024px) {
-  body {
-    height: auto;
-    max-height: none;
-    overflow: auto;
+  html, body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: auto !important;
   }
-  body > .flex-1.flex.flex-col {
-    height: auto;
-    min-height: auto;
-    overflow: visible;
+  #main-content {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    flex-shrink: 0 !important;
   }
   #chat-window {
-    height: auto;
-    min-height: 40vh;
-    max-height: 50vh;
+    min-height: 45vh !important;
+    max-height: 50vh !important;
     overflow: hidden !important;
   }
   #chat-messages {
-    max-height: 100%;
+    max-height: 100% !important;
   }
   #action-window {
     border-right: none;
     border-top: 1px solid #1a2332;
-    max-height: none;
   }
   #side-panel {
     border-top: 1px solid #1a2332;
-    max-height: 35vh;
+    max-height: 35vh !important;
   }
 }
 

@@ -241,9 +241,15 @@ async function agentReactToScenario(chapter) {
 const ALL_CATEGORIES = ['synthetic', 'natural', 'memory', 'emotion', 'personality', 'data'];
 
 function buildMarketContext(summary, txHistory, state) {
-  const lines = ['【当前行情】'];
+  const lines = ['【当前行情 — 各花种详细数据】'];
   for (const [cat, info] of Object.entries(summary)) {
-    lines.push(`${info.name}: 进价¥${Math.round(info.currentPrice)} ${info.trend === 'rising' ? '↑' : info.trend === 'falling' ? '↓' : '→'} 需求${info.demand} 供给${info.supply}`);
+    const product = PRODUCTS[cat];
+    const buy = getBuyPrice(cat, state);
+    const sell = getSellPrice(cat, state);
+    const margin = sell - buy;
+    const dealChance = calculateDealChance(product, sell, state);
+    const ev = Math.round(margin * dealChance / 100);
+    lines.push(`${info.name}: 进价¥${buy} 售价¥${sell} 利润¥${margin} 成交率${dealChance}% 期望收益¥${ev} ${info.trend === 'rising' ? '↑' : info.trend === 'falling' ? '↓' : '→'} 需求${info.demand} 供给${info.supply}`);
   }
   if (txHistory.length > 0) {
     lines.push(`\n【最近交易记录】`);

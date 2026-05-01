@@ -1,5 +1,7 @@
 // Market Data — Price trends, supply/demand, transaction history
 
+import { PRODUCTS } from './data.js';
+
 // ============================================================
 // FLOWER PRICING — Based on real flower market patterns
 // ============================================================
@@ -190,12 +192,12 @@ export function getMarketSummary() {
 // ============================================================
 
 const MARGIN_MULTIPLIER = {
-  synthetic: 1.3,
-  natural: 1.8,
-  memory: 2.0,
-  emotion: 1.6,
-  personality: 2.5,
-  data: 1.5,
+  synthetic: 1.15,
+  natural: 1.25,
+  memory: 1.3,
+  emotion: 1.2,
+  personality: 1.35,
+  data: 1.2,
 };
 
 export function getBuyPrice(category, state) {
@@ -224,9 +226,19 @@ export function getBuyPrice(category, state) {
 }
 
 export function getSellPrice(category, state) {
-  const buyPrice = getBuyPrice(category, state);
-  const margin = MARGIN_MULTIPLIER[category] || 1.5;
-  return Math.round(buyPrice * margin);
+  const product = PRODUCTS[category];
+  const info = FLOWER_PRICES[category];
+  const base = product?.priceSuggestion || info?.basePrice || 15;
+  const margin = MARGIN_MULTIPLIER[category] || 1.3;
+  // State modifiers affect the sell price slightly
+  let modifier = 0;
+  if (state) {
+    if (category === 'synthetic') modifier += state.platformDependence * 0.02;
+    if (category === 'natural') modifier += (100 - state.ecology) * 0.03;
+    if (category === 'memory') modifier += state.dataCapital * 0.02;
+    if (category === 'emotion') modifier += state.blackMarket * 0.02;
+  }
+  return Math.round(base * margin + modifier);
 }
 
 export function getMarginMultiplier(category) {
