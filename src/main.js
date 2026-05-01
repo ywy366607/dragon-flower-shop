@@ -348,7 +348,7 @@ async function tradingPhase(chapter) {
     wrapper.className = 'trading-phase';
     wrapper.innerHTML = `<div style="font-size: 12px; color: #5a6577; margin-bottom: 8px;">选择进货</div>`;
 
-    categories.forEach((cat) => {
+    ALL_CATEGORIES.forEach((cat) => {
       const p = prices[cat];
       const isRecommended = cat === recommendedCat;
       const btn = document.createElement('button');
@@ -358,16 +358,16 @@ async function tradingPhase(chapter) {
         btn.style.boxShadow = '0 0 8px rgba(240, 160, 80, 0.3)';
       }
       btn.innerHTML = `
-        <span class="choice-label">${isRecommended ? '★ ' : ''}${categoryNames[cat]}</span>
+        <span class="choice-label">${isRecommended ? '★ ' : ''}${CATEGORY_NAMES[cat]}</span>
         <span class="choice-desc">进价¥${p.buy} → 售¥${p.sell} (利润¥${p.profit})${isRecommended ? ' — 推荐' : ''}</span>
       `;
       btn.addEventListener('click', async () => {
         wrapper.querySelectorAll('.choice-btn').forEach(b => b.classList.add('disabled'));
         skipBtn.classList.add('disabled');
         if (isRecommended) {
-          await addChatMessage('player', `采纳建议，进货${categoryNames[cat]}。`, { delay: 150 });
+          await addChatMessage('player', `采纳建议，进货${CATEGORY_NAMES[cat]}。`, { delay: 150 });
         } else {
-          await addChatMessage('player', `进货${categoryNames[cat]}。`, { delay: 150 });
+          await addChatMessage('player', `进货${CATEGORY_NAMES[cat]}。`, { delay: 150 });
         }
         await executeTrade(cat, prices[cat], chapter);
         wrapper.remove();
