@@ -299,40 +299,69 @@ body {
   margin: 8px 0;
 }
 
-/* Ensure flex children can shrink below content size */
-.flex-1.flex.flex-col {
-  min-height: 0;
+/* Layout: force all columns to be height-constrained */
+body {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
+/* Main 3-column wrapper */
+body > .flex-1.flex.flex-col {
+  height: 0;
+  min-height: 0;
+  flex: 1 1 0%;
+}
+
+/* Chat window: scroll internally */
 #chat-window {
-  overflow: hidden;
+  height: 0;
   min-height: 0;
+  overflow: hidden !important;
 }
 
-#chat-window > #chat-messages {
-  overflow-y: auto;
-  min-height: 0;
+#chat-messages {
+  height: 100%;
+  overflow-y: auto !important;
 }
 
+/* Action window */
 #action-window {
-  overflow: hidden;
   min-height: 0;
+  overflow-y: auto !important;
 }
 
+/* Side panel */
 #side-panel {
-  overflow: hidden;
   min-height: 0;
+  overflow-y: auto !important;
 }
 
 /* Responsive */
 @media (max-width: 1024px) {
+  body {
+    height: auto;
+    max-height: none;
+    overflow: auto;
+  }
+  body > .flex-1.flex.flex-col {
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
   #chat-window {
-    min-height: 35vh;
+    height: auto;
+    min-height: 40vh;
     max-height: 50vh;
+    overflow: hidden !important;
+  }
+  #chat-messages {
+    max-height: 100%;
   }
   #action-window {
     border-right: none;
     border-top: 1px solid #1a2332;
+    max-height: none;
   }
   #side-panel {
     border-top: 1px solid #1a2332;
