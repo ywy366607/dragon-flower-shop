@@ -243,23 +243,24 @@ function getAIRecommendation(state, assistantType) {
   for (const cat of categories) {
     const buy = getBuyPrice(cat, state);
     const sell = getSellPrice(cat, state);
-    let score = sell - buy;
-    if (assistantType === 'platform') score += cat === 'synthetic' ? 15 : cat === 'emotion' ? -5 : 0;
-    else if (assistantType === 'local') score += cat === 'natural' ? 12 : cat === 'synthetic' ? -8 : 0;
-    if (state.cash < 30) score += buy < 20 ? 10 : -10;
-    if (state.blackMarket > 70) score += cat === 'emotion' ? 8 : 0;
-    if (state.regulationPressure > 70) score += cat === 'memory' ? -15 : 0;
-    if (state.ecology < 30) score += cat === 'natural' ? 10 : 0;
-    scores[cat] = score;
+    const margin = sell - buy;
+    const product = PRODUCTS[cat];
+    const dealChance = calculateDealChance(product, sell, state);
+    let score = margin * (dealChance / 100);
+    if (assistantType === 'platform') score += cat === 'synthetic' ? 3 : cat === 'emotion' ? -2 : 0;
+    else if (assistantType === 'local') score += cat === 'natural' ? 3 : cat === 'synthetic' ? -2 : 0;
+    if (state.cash < 30) score += buy < 20 ? 3 : -3;
+    if (state.blackMarket > 70) score += cat === 'emotion' ? 2 : 0;
+    if (state.regulationPressure > 70) score += cat === 'memory' ? -3 : 0;
+    if (state.ecology < 30) score += cat === 'natural' ? 2 : 0;
+    scores[cat] = { score, margin, dealChance, buy, sell };
   }
-  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
-  const reasons = {
-    synthetic: '利润稳定，平台补贴降低风险',
-    natural: '生态价值高，有助提升口碑',
-    memory: '数据资本回报最高，但监管风险大',
-    emotion: '黑市渠道溢价可观',
+  const best = Object.entries(scores).sort((a, b) => b[1].score - a[1].score)[0];
+  const [bestCat, info] = best;
+  return {
+    category: bestCat,
+    reason: `成交率${info.dealChance}%，期望收益¥${Math.round(info.margin * info.dealChance / 100)}`,
   };
-  return { category: best, reason: reasons[best] };
 }
 
 async function tradingPhase(chapterIndex) {

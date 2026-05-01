@@ -369,7 +369,7 @@ export function checkMarketEvents(chapter, state) {
 
   if (state.platformDependence > 70 && chapter >= 2) {
     events.push({
-      text: '平台依赖度过高。合成花价格开始受平台调控。',
+      text: '平台补贴生效。合成花进价下降——但你离不开了。',
       effect: { synthetic: -3 },
     });
   }
