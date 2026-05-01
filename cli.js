@@ -11,7 +11,7 @@ import {
 import { CHAPTERS, ENDINGS, PRODUCTS } from './src/data.js';
 import {
   initMarket, simulatePriceChange, updateSupplyDemand,
-  checkMarketEvents, getMarketSummary,
+  checkMarketEvents, getMarketSummary, getTransactions,
   getBuyPrice, getSellPrice, getMarginMultiplier,
 } from './src/market.js';
 
@@ -143,20 +143,39 @@ let choiceHistory = [];
 // LLM HELPERS
 // ============================================================
 
+function buildMarketContext(summary, txHistory, state) {
+  const lines = ['【当前行情】'];
+  for (const [cat, info] of Object.entries(summary)) {
+    lines.push(`${info.name}: 进价¥${Math.round(info.currentPrice)} ${info.trend === 'rising' ? '↑' : info.trend === 'falling' ? '↓' : '→'} 需求${info.demand} 供给${info.supply}`);
+  }
+  if (txHistory.length > 0) {
+    lines.push(`\n【最近交易记录】`);
+    for (const tx of txHistory.slice(-5)) {
+      lines.push(`${tx.category} ¥${tx.price} ${tx.success ? '成交' : '未成交'} (概率${tx.dealRate}%)`);
+    }
+  }
+  lines.push(`\n【经营状态】现金¥${Math.round(state.cash)} 信用${state.trust} 留存${state.retention} 平台依赖${state.platformDependence} 监管${state.regulationPressure} 黑市${state.blackMarket}`);
+  return lines.join('\n');
+}
+
 async function agentReact(speaker, label, context) {
   if (!flags.llm || !llmModule) return;
   try {
     const state = getState();
+    const summary = getMarketSummary();
+    const txHistory = getTransactions();
+    const marketCtx = buildMarketContext(summary, txHistory, state);
+
     if (speaker === 'platform') {
       llmModule.platformAgent.setSystemPrompt(
-        llmModule.buildPlatformSystemPrompt(state, context)
+        llmModule.buildPlatformSystemPrompt(state, context, marketCtx)
       );
       const r = await llmModule.platformAgent.chat(context, label);
       if (r) out(`[总模型助手] ${r}`);
     } else {
       const memoryTexts = memories.map(m => m.memory);
       llmModule.localAgent.setSystemPrompt(
-        llmModule.buildLocalSystemPrompt(state, context, assistantStage, memoryTexts, llmModule.localAgent.name)
+        llmModule.buildLocalSystemPrompt(state, context, assistantStage, memoryTexts, llmModule.localAgent.name, marketCtx)
       );
       const r = await llmModule.localAgent.chat(context, label);
       if (r) out(`[阿原] ${r}`);
@@ -203,11 +222,15 @@ async function generateEndingTimeline(state, endingKey) {
 // TRADING PHASE
 // ============================================================
 
+const ALL_CATEGORIES = ['synthetic', 'natural', 'memory', 'emotion', 'personality', 'data'];
+
 const CATEGORY_NAMES = {
   synthetic: '合成花「歉意-7型」',
   natural: '自然花「低温白」',
   memory: '索引花「雨后编号03」',
   emotion: '情绪花「安眠-蓝」',
+  personality: '人格花「缓慢决策」',
+  data: '含数花「第41次开花」',
 };
 
 const CATEGORY_DESC = {
@@ -215,6 +238,8 @@ const CATEGORY_DESC = {
   natural: '中风险中利润',
   memory: '高风险高利润',
   emotion: '中风险高利润',
+  personality: '极高风险极高利润',
+  data: '高风险中利润',
 };
 
 function getSuccessEffect(category, profit) {
@@ -223,6 +248,8 @@ function getSuccessEffect(category, profit) {
     natural: { cash: profit, money: 3, retention: 8, ecology: 10, localAIStyle: 3 },
     memory: { cash: profit, money: 4, dataCapital: 10, regulationPressure: 5, retention: 4 },
     emotion: { cash: profit, money: 6, blackMarket: 8, regulationPressure: 6, assimilation: 3, ecology: -3 },
+    personality: { cash: profit, money: 5, localAI: 10, localAIStyle: 15, regulationPressure: 8, platformDependence: -5 },
+    data: { cash: profit, money: 4, dataCapital: 15, platformDependence: 5, assimilation: 5, localAI: 3 },
   };
   return effects[category] || { cash: profit, money: 3 };
 }
@@ -233,25 +260,26 @@ function getFailEffect(category, spoilage) {
     natural: { cash: -spoilage, money: -2, ecology: 3 },
     memory: { cash: -spoilage, money: -2, dataCapital: 3, regulationPressure: 2 },
     emotion: { cash: -spoilage, money: -2, blackMarket: 3, regulationPressure: 2 },
+    personality: { cash: -spoilage, money: -2, localAI: 3, regulationPressure: 3 },
+    data: { cash: -spoilage, money: -2, dataCapital: 3 },
   };
   return effects[category] || { cash: -spoilage, money: -2 };
 }
 
 function getAIRecommendation(state, assistantType) {
-  const categories = ['synthetic', 'natural', 'memory', 'emotion'];
   const scores = {};
-  for (const cat of categories) {
+  for (const cat of ALL_CATEGORIES) {
     const buy = getBuyPrice(cat, state);
     const sell = getSellPrice(cat, state);
     const margin = sell - buy;
     const product = PRODUCTS[cat];
     const dealChance = calculateDealChance(product, sell, state);
     let score = margin * (dealChance / 100);
-    if (assistantType === 'platform') score += cat === 'synthetic' ? 3 : cat === 'emotion' ? -2 : 0;
+    if (assistantType === 'platform') score += cat === 'synthetic' ? 3 : cat === 'personality' ? -2 : 0;
     else if (assistantType === 'local') score += cat === 'natural' ? 3 : cat === 'synthetic' ? -2 : 0;
     if (state.cash < 30) score += buy < 20 ? 3 : -3;
     if (state.blackMarket > 70) score += cat === 'emotion' ? 2 : 0;
-    if (state.regulationPressure > 70) score += cat === 'memory' ? -3 : 0;
+    if (state.regulationPressure > 70) score += (cat === 'memory' || cat === 'personality') ? -3 : 0;
     if (state.ecology < 30) score += cat === 'natural' ? 2 : 0;
     scores[cat] = { score, margin, dealChance, buy, sell };
   }
@@ -265,21 +293,20 @@ function getAIRecommendation(state, assistantType) {
 
 async function tradingPhase(chapterIndex) {
   const state = getState();
-  const categories = ['synthetic', 'natural', 'memory', 'emotion'];
 
   out('\n--- 进货 ---');
   out(`现金: ¥${Math.round(state.cash)}`);
   out('');
 
   const prices = {};
-  for (const cat of categories) {
+  for (const cat of ALL_CATEGORIES) {
     const buy = getBuyPrice(cat, state);
     const sell = getSellPrice(cat, state);
     const margin = sell - buy;
     prices[cat] = { buy, sell, profit: margin };
-    out(`  ${CATEGORY_NAMES[cat]}  进价:¥${buy} 预售:¥${sell} 利润:¥${margin}  (${CATEGORY_DESC[cat]})`);
+    out(`  [${ALL_CATEGORIES.indexOf(cat) + 1}] ${CATEGORY_NAMES[cat]}  进价:¥${buy} 预售:¥${sell} 利润:¥${margin}  (${CATEGORY_DESC[cat]})`);
   }
-  out(`  [5] 不进货`);
+  out(`  [7] 不进货`);
 
   // AI recommendation
   let recommendedIndex = null;
@@ -288,15 +315,15 @@ async function tradingPhase(chapterIndex) {
     const recL = getAIRecommendation(state, 'local');
     out(`\n[总模型助手] 建议进货${CATEGORY_NAMES[recP.category]}。${recP.reason}。`);
     out(`[阿原] 店主，我建议进${CATEGORY_NAMES[recL.category]}。${recL.reason}。`);
-    recommendedIndex = categories.indexOf(recL.category) + 1;
+    recommendedIndex = ALL_CATEGORIES.indexOf(recL.category) + 1;
   } else if (assistantType === 'platform') {
     const rec = getAIRecommendation(state, 'platform');
-    const idx = categories.indexOf(rec.category) + 1;
+    const idx = ALL_CATEGORIES.indexOf(rec.category) + 1;
     out(`\n[总模型助手] 建议进货${CATEGORY_NAMES[rec.category]}。${rec.reason}。`);
     recommendedIndex = idx;
   } else if (assistantType === 'local') {
     const rec = getAIRecommendation(state, 'local');
-    const idx = categories.indexOf(rec.category) + 1;
+    const idx = ALL_CATEGORIES.indexOf(rec.category) + 1;
     out(`\n[阿原] 店主，我建议进${CATEGORY_NAMES[rec.category]}。${rec.reason}。`);
     recommendedIndex = idx;
   } else {
@@ -310,7 +337,7 @@ async function tradingPhase(chapterIndex) {
       catIndex = recommendedIndex - 1;
       out(`\n> ${catIndex + 1} (auto, 采纳建议)`);
     } else {
-      catIndex = Math.floor(rng() * 5);
+      catIndex = Math.floor(rng() * ALL_CATEGORIES.length);
       out(`\n> ${catIndex + 1} (auto)`);
     }
   } else if (flags.script && flags.script.trade && flags.script.trade[chapterIndex]) {
@@ -318,17 +345,17 @@ async function tradingPhase(chapterIndex) {
     out(`\n> ${catIndex + 1} (scripted)`);
   } else {
     const hint = recommendedIndex ? ` (AI推荐:${recommendedIndex})` : '';
-    const input = await ask(`\n选择进货 (1-5)${hint}: `);
+    const input = await ask(`\n选择进货 (1-7)${hint}: `);
     catIndex = parseInt(input, 10) - 1;
-    if (catIndex < 0 || catIndex > 4) catIndex = 4; // default: skip
+    if (catIndex < 0 || catIndex > 6) catIndex = 6; // default: skip
   }
 
-  if (catIndex === 4) {
+  if (catIndex === 6) {
     out('[你] 今日不进货。');
     return;
   }
 
-  const cat = categories[catIndex];
+  const cat = ALL_CATEGORIES[catIndex];
   const p = prices[cat];
 
   if (state.cash < p.buy) {

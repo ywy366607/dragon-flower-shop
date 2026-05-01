@@ -26,6 +26,7 @@ import {
   initMarket, simulatePriceChange, updateSupplyDemand,
   recordTransaction, renderMarketPanel, checkMarketEvents,
   getBuyPrice, getSellPrice, getMarginMultiplier,
+  getMarketSummary, getTransactions,
 } from './market.js';
 
 // Game state
@@ -158,17 +159,20 @@ async function playChapter(index) {
 
 function updateAgentContexts(chapter) {
   const state = getState();
+  const summary = getMarketSummary();
+  const txHistory = getTransactions();
+  const marketContext = buildMarketContext(summary, txHistory, state);
 
   if (assistantType === 'platform' || assistantType === 'mixed') {
     platformAgent.setSystemPrompt(
-      buildPlatformSystemPrompt(state, chapter.context)
+      buildPlatformSystemPrompt(state, chapter.context, marketContext)
     );
   }
 
   if (assistantType === 'local' || assistantType === 'mixed') {
     const memoryTexts = memories.map(m => m.memory);
     localAgent.setSystemPrompt(
-      buildLocalSystemPrompt(state, chapter.context, assistantStage, memoryTexts, localAgent.name)
+      buildLocalSystemPrompt(state, chapter.context, assistantStage, memoryTexts, localAgent.name, marketContext)
     );
   }
 }
@@ -213,30 +217,73 @@ async function agentReactToScenario(chapter) {
 
 // --- Trading Phase (every chapter) ---
 
+const ALL_CATEGORIES = ['synthetic', 'natural', 'memory', 'emotion', 'personality', 'data'];
+
+function buildMarketContext(summary, txHistory, state) {
+  const lines = ['【当前行情】'];
+  for (const [cat, info] of Object.entries(summary)) {
+    lines.push(`${info.name}: 进价¥${Math.round(info.currentPrice)} ${info.trend === 'rising' ? '↑' : info.trend === 'falling' ? '↓' : '→'} 需求${info.demand} 供给${info.supply}`);
+  }
+  if (txHistory.length > 0) {
+    lines.push(`\n【最近交易记录】`);
+    for (const tx of txHistory.slice(-5)) {
+      lines.push(`${tx.category} ¥${tx.price} ${tx.success ? '成交' : '未成交'} (概率${tx.dealRate}%)`);
+    }
+  }
+  lines.push(`\n【经营状态】现金¥${Math.round(state.cash)} 信用${state.trust} 留存${state.retention} 平台依赖${state.platformDependence} 监管${state.regulationPressure} 黑市${state.blackMarket}`);
+  return lines.join('\n');
+}
+
+async function getLLMRecommendation(state, agentType, marketContext) {
+  // Try LLM first, fall back to algorithm
+  try {
+    const agent = agentType === 'platform' ? platformAgent : localAgent;
+    const prompt = `你是进货顾问。根据以下市场数据，推荐一种花进货。只回复一句话，格式：推荐XXX花，原因：XXX\n\n${marketContext}`;
+    const response = await agent.chat(prompt, { maxTokens: 100, timeout: 8000 });
+    if (response) {
+      // Parse: try to find which flower was recommended
+      const catMap = { '合成': 'synthetic', '自然': 'natural', '索引': 'memory', '情绪': 'emotion', '人格': 'personality', '含数': 'data' };
+      for (const [keyword, cat] of Object.entries(catMap)) {
+        if (response.includes(keyword)) {
+          return { category: cat, reason: response.replace(/^.*?原因[：:]\s*/, '') };
+        }
+      }
+    }
+  } catch (e) {
+    // LLM failed, fall through to algorithm
+  }
+  // Fallback: algorithm-based recommendation
+  return getAIRecommendation(state, agentType);
+}
+const CATEGORY_NAMES = {
+  synthetic: '合成花「歉意-7型」',
+  natural: '自然花「低温白」',
+  memory: '索引花「雨后编号03」',
+  emotion: '情绪花「安眠-蓝」',
+  personality: '人格花「缓慢决策」',
+  data: '含数花「第41次开花」',
+};
+
 function getAIRecommendation(state, assistantType) {
-  const categories = ['synthetic', 'natural', 'memory', 'emotion'];
   const scores = {};
 
-  for (const cat of categories) {
+  for (const cat of ALL_CATEGORIES) {
     const buy = getBuyPrice(cat, state);
     const sell = getSellPrice(cat, state);
     const margin = sell - buy;
     const product = PRODUCTS[cat];
     const dealChance = calculateDealChance(product, sell, state);
-    // Expected value: profit × deal probability
     let score = margin * (dealChance / 100);
 
-    // Assistant bias
     if (assistantType === 'platform') {
-      score += cat === 'synthetic' ? 3 : cat === 'emotion' ? -2 : 0;
+      score += cat === 'synthetic' ? 3 : cat === 'personality' ? -2 : 0;
     } else if (assistantType === 'local') {
       score += cat === 'natural' ? 3 : cat === 'synthetic' ? -2 : 0;
     }
 
-    // State-based adjustments
     if (state.cash < 30) score += buy < 20 ? 3 : -3;
     if (state.blackMarket > 70) score += cat === 'emotion' ? 2 : 0;
-    if (state.regulationPressure > 70) score += cat === 'memory' ? -3 : 0;
+    if (state.regulationPressure > 70) score += (cat === 'memory' || cat === 'personality') ? -3 : 0;
     if (state.ecology < 30) score += cat === 'natural' ? 2 : 0;
 
     scores[cat] = { score, margin, dealChance, buy, sell };
@@ -245,60 +292,53 @@ function getAIRecommendation(state, assistantType) {
   const best = Object.entries(scores).sort((a, b) => b[1].score - a[1].score)[0];
   const [bestCat, info] = best;
 
-  const reasons = {
-    synthetic: `成交率${info.dealChance}%，期望收益¥${Math.round(info.margin * info.dealChance / 100)}`,
-    natural: `成交率${info.dealChance}%，期望收益¥${Math.round(info.margin * info.dealChance / 100)}`,
-    memory: `成交率${info.dealChance}%，期望收益¥${Math.round(info.margin * info.dealChance / 100)}`,
-    emotion: `成交率${info.dealChance}%，期望收益¥${Math.round(info.margin * info.dealChance / 100)}`,
+  return {
+    category: bestCat,
+    reason: `成交率${info.dealChance}%，期望收益¥${Math.round(info.margin * info.dealChance / 100)}`,
   };
-
-  return { category: bestCat, reason: reasons[bestCat] };
 }
 
 async function tradingPhase(chapter) {
   const state = getState();
-  const categories = ['synthetic', 'natural', 'memory', 'emotion'];
-  const categoryNames = {
-    synthetic: '合成花「歉意-7型」',
-    natural: '自然花「低温白」',
-    memory: '索引花「雨后编号03」',
-    emotion: '情绪花「安眠-蓝」',
-  };
 
   // Show market info
   const prices = {};
-  for (const cat of categories) {
+  for (const cat of ALL_CATEGORIES) {
     const buy = getBuyPrice(cat, state);
     const sell = getSellPrice(cat, state);
     prices[cat] = { buy, sell, profit: sell - buy };
   }
 
   await addChatMessage('system', `当前现金：¥${state.cash}。今日进货行情：`, { delay: 300 });
-  for (const cat of categories) {
+  for (const cat of ALL_CATEGORIES) {
     const p = prices[cat];
     await addChatMessage('system',
-      `${categoryNames[cat]} — 进价¥${p.buy} 预售¥${p.sell} 利润¥${p.profit}`,
-      { delay: 100, instant: true }
+      `${CATEGORY_NAMES[cat]} — 进价¥${p.buy} 预售¥${p.sell} 利润¥${p.profit}`,
+      { delay: 80, instant: true }
     );
   }
+
+  // Build market context for AI
+  const summary = getMarketSummary();
+  const txHistory = getTransactions();
+  const marketContext = buildMarketContext(summary, txHistory, state);
 
   // AI recommendation
   let recommendedCat = null;
   if (assistantType === 'mixed') {
-    const recP = getAIRecommendation(state, 'platform');
-    const recL = getAIRecommendation(state, 'local');
-    await addChatMessage('platform_ai', `建议进货${categoryNames[recP.category]}。${recP.reason}。`, { delay: 400 });
-    await addChatMessage('assistant', `店主，我建议进${categoryNames[recL.category]}。${recL.reason}。`, { delay: 400 });
-    // Highlight local recommendation (player's own assistant takes priority)
+    const recP = await getLLMRecommendation(state, 'platform', marketContext);
+    const recL = await getLLMRecommendation(state, 'local', marketContext);
+    await addChatMessage('platform_ai', `建议进货${CATEGORY_NAMES[recP.category]}。${recP.reason}`, { delay: 400 });
+    await addChatMessage('assistant', `店主，我建议进${CATEGORY_NAMES[recL.category]}。${recL.reason}`, { delay: 400 });
     recommendedCat = recL.category;
   } else if (assistantType === 'platform') {
-    const rec = getAIRecommendation(state, 'platform');
+    const rec = await getLLMRecommendation(state, 'platform', marketContext);
     recommendedCat = rec.category;
-    await addChatMessage('platform_ai', `建议进货${categoryNames[rec.category]}。${rec.reason}。`, { delay: 500 });
+    await addChatMessage('platform_ai', `建议进货${CATEGORY_NAMES[rec.category]}。${rec.reason}`, { delay: 500 });
   } else if (assistantType === 'local') {
-    const rec = getAIRecommendation(state, 'local');
+    const rec = await getLLMRecommendation(state, 'local', marketContext);
     recommendedCat = rec.category;
-    await addChatMessage('assistant', `店主，我建议进${categoryNames[rec.category]}。${rec.reason}。`, { delay: 500 });
+    await addChatMessage('assistant', `店主，我建议进${CATEGORY_NAMES[rec.category]}。${rec.reason}`, { delay: 500 });
   }
 
   // Show trading choices — highlight recommended
@@ -354,14 +394,8 @@ async function tradingPhase(chapter) {
 
 async function executeTrade(category, priceInfo, chapter) {
   const state = getState();
-  const categoryNames = {
-    synthetic: '合成花「歉意-7型」',
-    natural: '自然花「低温白」',
-    memory: '索引花「雨后编号03」',
-    emotion: '情绪花「安眠-蓝」',
-  };
 
-  await addChatMessage('player', `进货：${categoryNames[category]}`, { delay: 200 });
+  await addChatMessage('player', `进货：${CATEGORY_NAMES[category]}`, { delay: 200 });
 
   // Check if player has enough cash
   if (state.cash < priceInfo.buy) {
@@ -406,6 +440,8 @@ function getSuccessEffect(category, profit) {
     natural: { cash: profit, money: 3, retention: 8, ecology: 10, localAIStyle: 3 },
     memory: { cash: profit, money: 4, dataCapital: 10, regulationPressure: 5, retention: 4 },
     emotion: { cash: profit, money: 6, blackMarket: 8, regulationPressure: 6, assimilation: 3, ecology: -3 },
+    personality: { cash: profit, money: 5, localAI: 10, localAIStyle: 15, regulationPressure: 8, platformDependence: -5 },
+    data: { cash: profit, money: 4, dataCapital: 15, platformDependence: 5, assimilation: 5, localAI: 3 },
   };
   return effects[category] || { cash: profit, money: 3 };
 }
@@ -416,6 +452,8 @@ function getFailEffect(category, spoilage) {
     natural: { cash: -spoilage, money: -2, ecology: 3 },
     memory: { cash: -spoilage, money: -2, dataCapital: 3, regulationPressure: 2 },
     emotion: { cash: -spoilage, money: -2, blackMarket: 3, regulationPressure: 2 },
+    personality: { cash: -spoilage, money: -2, localAI: 3, regulationPressure: 3 },
+    data: { cash: -spoilage, money: -2, dataCapital: 3 },
   };
   return effects[category] || { cash: -spoilage, money: -2 };
 }
