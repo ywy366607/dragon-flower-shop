@@ -299,79 +299,10 @@ body {
   margin: 8px 0;
 }
 
-/* ===== LAYOUT: fixed viewport, each panel scrolls independently ===== */
-
-/* Lock viewport */
-html {
-  height: 100%;
-  overflow: hidden;
-}
-body {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Main 3-column wrapper */
-#main-content {
-  min-height: 0;
-  overflow: hidden;
-}
-
-/* Chat window */
-#chat-window {
-  min-height: 0;
-  overflow: hidden;
-}
-
-#chat-messages {
-  overflow-y: scroll;
-  overscroll-behavior: contain;
-}
-
-/* Visible scrollbar on chat */
-#chat-messages::-webkit-scrollbar {
-  width: 8px;
-}
-#chat-messages::-webkit-scrollbar-track {
-  background: #0a0e14;
-}
-#chat-messages::-webkit-scrollbar-thumb {
-  background: #2a3342;
-  border-radius: 4px;
-}
-#chat-messages::-webkit-scrollbar-thumb:hover {
-  background: #3a4557;
-}
-
-/* Action window */
-#action-window {
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* Side panel */
-#side-panel {
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* ===== Responsive: mobile stacks vertically ===== */
+/* Responsive */
 @media (max-width: 1024px) {
-  html, body {
-    height: auto;
-    overflow: auto;
-  }
-  #main-content {
-    min-height: auto;
-    overflow: visible;
-  }
   #chat-window {
-    min-height: 45vh;
     max-height: 50vh;
-    overflow: hidden;
-  }
-  #chat-messages {
-    max-height: 100%;
   }
   #action-window {
     border-right: none;
